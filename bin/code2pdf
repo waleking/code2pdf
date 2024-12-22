@@ -2,7 +2,8 @@
 
 # Get the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-INSTALL_DIR="$(dirname "$SCRIPT_DIR")"
+BREW_PREFIX="$(brew --prefix)"
+INSTALL_DIR="$BREW_PREFIX/opt/code2pdf/scripts"
 
 # Help text
 show_help() {
