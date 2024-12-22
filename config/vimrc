@@ -1,0 +1,19 @@
+" Use a Printer-Friendly Color Scheme
+colorscheme zellner 
+
+" tabs and spaces handling
+set expandtab
+set tabstop=4
+set shiftwidth=4
+set encoding=utf-8
+set fileencoding=utf-8
+set printoptions=number:y
+set guifont=Noto\ Sans\ Simplified\ Chinese
+
+" Enable syntax highlighting
+syntax on
+
+" Automatically detect file type
+filetype on
+filetype indent on
+filetype plugin on
