@@ -126,6 +126,8 @@ do
     orig_file_name=$( generate_orig_file_name $entry )
     echo "$orig_file_name" >> table_of_contents
 done
+echo "Info: Contents of table_of_contents:" >&2
+cat table_of_contents >&2
 
 vim -u "$VIMRC_PATH" "+hardcopy > 00_table_of_contents.ps" "+wq" table_of_contents
 ps2pdf 00_table_of_contents.ps 00_table_of_contents.pdf
@@ -134,7 +136,11 @@ ps2pdf 00_table_of_contents.ps 00_table_of_contents.pdf
 # Step 3. Merge all /tmp/*.pdf into a single pdf
 ##########################################3
 echo "merging all pdf files into a single file named merged.pdf" >&2
+echo "Info: Checking /tmp/*.pdf files:" >&2
+ls -l /tmp/*.pdf >&2
 gs -q -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=/tmp/merged.pdf /tmp/*.pdf >&2
 
 # Move the PDF to the project folder
-cp "/tmp/merged.pdf" "$ROOT_DIR/merged.pdf"
+mv "/tmp/merged.pdf" "$ROOT_DIR/merged.pdf"
+echo "Info: Final merged PDF location:" >&2
+ls -l "$ROOT_DIR/merged.pdf" >&2
