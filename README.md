@@ -69,3 +69,10 @@ Show help:
 ```bash
 code2pdf --help
 ```
+
+## License
+
+This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+
+- For commercial use, please [open a GitHub issue](https://github.com/readbysearch/code2pdf/issues) to discuss licensing options
+- For non-commercial use, you must comply with AGPL-3.0 terms
