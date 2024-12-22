@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # If no argument is provided, use current directory as default
-ROOT_DIR=${1:-$(pwd)}
+R# Convert ROOT_DIR to absolute path immediately when setting it
+ROOT_DIR=$(cd "${1:-.}" && pwd)
 
 # Get vimrc path
 VIMRC_PATH=$2
@@ -135,12 +136,39 @@ ps2pdf 00_table_of_contents.ps 00_table_of_contents.pdf
 ##########################################3
 # Step 3. Merge all /tmp/*.pdf into a single pdf
 ##########################################3
-echo "merging all pdf files into a single file named merged.pdf" >&2
-echo "Info: Checking /tmp/*.pdf files:" >&2
-ls -l /tmp/*.pdf >&2
-gs -q -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=/tmp/merged.pdf /tmp/*.pdf >&2
+echo "Debug: Starting final merge step..." >&2
+echo "Debug: Current working directory: $(pwd)" >&2
+echo "Debug: ROOT_DIR value: $ROOT_DIR" >&2
 
-# Move the PDF to the project folder
-mv "/tmp/merged.pdf" "$ROOT_DIR/merged.pdf"
-echo "Info: Final merged PDF location:" >&2
-ls -l "$ROOT_DIR/merged.pdf" >&2
+# Clean up any existing merged PDF
+echo "Debug: Removing any existing merged.pdf" >&2
+rm -f "$ROOT_DIR/merged.pdf"
+
+# Merge PDFs with explicit error checking
+echo "merging all pdf files into a single file named merged.pdf" >&2
+if ! gs -q -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=/tmp/merged.pdf /tmp/*.pdf >&2; then
+    echo "Error: PDF merge failed" >&2
+    exit 1
+fi
+
+# Check if merge was successful
+if [ ! -f "/tmp/merged.pdf" ]; then
+    echo "Error: Merged PDF was not created" >&2
+    exit 1
+fi
+
+# Move with explicit error checking
+echo "Debug: Moving merged PDF to final location" >&2
+if ! mv "/tmp/merged.pdf" "$ROOT_DIR/merged.pdf"; then
+    echo "Error: Failed to move merged PDF" >&2
+    exit 1
+fi
+
+# Verify final file exists
+if [ -f "$ROOT_DIR/merged.pdf" ]; then
+    echo "Success: PDF created at $ROOT_DIR/merged.pdf" >&2
+    ls -l "$ROOT_DIR/merged.pdf" >&2
+else
+    echo "Error: Final PDF not found at expected location" >&2
+    exit 1
+fi
