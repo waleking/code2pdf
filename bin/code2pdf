@@ -47,7 +47,16 @@ main() {
             ;;
         -a|--all)
             shift
-            "$SCRIPTS_DIR/print_all.sh" "$1" "$CONFIG_DIR/vimrc"
+            DEFAULT_BLACKLIST='["node_modules", ".git", "dist", "out"]'
+            DEFAULT_BLACKLIST_PATTERN='env*'
+            DEFAULT_WHITELIST_EXTENSIONS='["rb", "sh", "md", "js", "py", "ts", "java", "cpp", "h", "c"]'
+            DEFAULT_WHITELIST_FILES='["README", "LICENSE", "Makefile", "launch.json"]'
+            
+            "$SCRIPTS_DIR/print_all.sh" "$1" "$CONFIG_DIR/vimrc" \
+                "$DEFAULT_BLACKLIST" \
+                "$DEFAULT_BLACKLIST_PATTERN" \
+                "$DEFAULT_WHITELIST_EXTENSIONS" \
+                "$DEFAULT_WHITELIST_FILES"
             ;;
         -h|--help)
             show_help

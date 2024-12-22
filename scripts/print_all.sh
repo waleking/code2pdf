@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # If no argument is provided, use current directory as default
-ROOT_DIR=${1:-$(pwd)/..}
+ROOT_DIR=${1:-$(pwd)}
 
 # Get vimrc path
 VIMRC_PATH=$2
