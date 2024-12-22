@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
 # Get the directory where the script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 BREW_PREFIX="$(brew --prefix)"
-INSTALL_DIR="$BREW_PREFIX/opt/code2pdf/scripts"
+INSTALL_DIR="$BREW_PREFIX/opt/code2pdf"
+SCRIPTS_DIR="$INSTALL_DIR/scripts"
+CONFIG_DIR="$INSTALL_DIR/config"
 
 # Help text
 show_help() {
@@ -42,11 +43,11 @@ main() {
     case "$1" in
         -s|--single)
             shift
-            "$INSTALL_DIR/scripts/print_single_file_to_pdf.sh" "$1" "$(pwd)"
+            "$SCRIPTS_DIR/print_single_file_to_pdf.sh" "$1" "$(pwd)"
             ;;
         -a|--all)
             shift
-            "$INSTALL_DIR/scripts/print_all.sh" "$1" "$INSTALL_DIR/config/vimrc"
+            "$SCRIPTS_DIR/print_all.sh" "$1" "$CONFIG_DIR/vimrc"
             ;;
         -h|--help)
             show_help
