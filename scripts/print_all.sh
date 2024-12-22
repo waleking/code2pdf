@@ -1,4 +1,5 @@
 #!/bin/bash
+declare -a visited_dirs=() # to avoid symbolic link recursion
 
 # If no argument is provided, use current directory as default
 R# Convert ROOT_DIR to absolute path immediately when setting it
@@ -15,6 +16,9 @@ WHITELISTED_FILE_NAMES_JSON=$6
 INCLUDE_NO_EXTENSION=${7:-true}  # default value "true" means processing the files without extension, such as Dockerfile, vimrc, LICENSE, and Makefile.
 
 vim --version >&2
+echo "DEBUG: Starting script execution..." >&2
+echo "DEBUG: Working directory: $(pwd)" >&2
+echo "DEBUG: ROOT_DIR: $ROOT_DIR" >&2
 
 # Count lines in all .ts files excluding those in node_modules and display file names
 # find "$ROOT_DIR" -name "node_modules" -prune -o -name "*$EXTENSION" -type f -print | xargs wc -l
@@ -33,9 +37,13 @@ generate_pdf_file_name () {
 
 print_to_pdf () {
     file_name=$1
-    echo "converting to a pdf file for $file_name"
+    echo "DEBUG: ===================" >&2
+    echo "DEBUG: Converting file: $file_name" >&2
+    echo "DEBUG: Starting vim conversion..." >&2
     pdf_name=$( generate_pdf_file_name $file_name)
     vim -u "$VIMRC_PATH" -c "syntax on" "+set stl+=%{expand('%:~:.')}" "+hardcopy > /tmp/$pdf_name.ps" "+wq" $file_name
+    echo "DEBUG: Vim conversion complete" >&2
+    echo "DEBUG: Converting PS to PDF..." >&2
     ps2pdf /tmp/$pdf_name.ps /tmp/$pdf_name.pdf
 }
 
@@ -64,6 +72,7 @@ print_files_in_a_folder() {
         return
     fi
 
+    echo "DEBUG: Processing folder: $folder" >&2
     for entry in "$folder"/*
     do
         if [ -f "$entry" ]
@@ -110,7 +119,14 @@ print_files_in_a_folder() {
             fi
         else
             # further visit the files or folders in the current folder
-            print_files_in_a_folder "$entry"
+            # and also avoid symbolic link recursion
+            real_path=$(realpath "$entry")
+            if [[ ! " ${visited_dirs[@]} " =~ " ${real_path} " ]]; then
+                visited_dirs+=("$real_path")
+                print_files_in_a_folder "$entry"
+            else
+                echo "DEBUG: Skipping already visited directory: $entry" >&2
+            fi
         fi
     done
 }
