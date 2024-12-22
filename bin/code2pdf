@@ -6,6 +6,11 @@ INSTALL_DIR="$BREW_PREFIX/opt/code2pdf"
 SCRIPTS_DIR="$INSTALL_DIR/scripts"
 CONFIG_DIR="$INSTALL_DIR/config"
 
+## Use local development directory instead
+# INSTALL_DIR="/Users/[username]/git/code2pdf"
+# SCRIPTS_DIR="$INSTALL_DIR/scripts"
+# CONFIG_DIR="$INSTALL_DIR/config"
+
 # Help text
 show_help() {
     echo "Usage: code2pdf [OPTIONS] <file or directory>"
@@ -51,12 +56,14 @@ main() {
             DEFAULT_BLACKLIST_PATTERN='env*'
             DEFAULT_WHITELIST_EXTENSIONS='["rb", "sh", "md", "js", "py", "ts", "java", "cpp", "h", "c"]'
             DEFAULT_WHITELIST_FILES='["README", "LICENSE", "Makefile", "launch.json"]'
+            DEFAULT_INCLUDE_NO_EXTENSION='true' 
             
             "$SCRIPTS_DIR/print_all.sh" "$1" "$CONFIG_DIR/vimrc" \
                 "$DEFAULT_BLACKLIST" \
                 "$DEFAULT_BLACKLIST_PATTERN" \
                 "$DEFAULT_WHITELIST_EXTENSIONS" \
-                "$DEFAULT_WHITELIST_FILES"
+                "$DEFAULT_WHITELIST_FILES" \
+                "$DEFAULT_INCLUDE_NO_EXTENSION"
             ;;
         -h|--help)
             show_help

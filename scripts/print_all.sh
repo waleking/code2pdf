@@ -12,6 +12,7 @@ BLACKLISTED_FOLDERS_JSON=$3
 BLACKLISTED_FOLDER_PATTERN=$4
 WHITELISTED_FILE_EXTENSIONS_JSON=$5
 WHITELISTED_FILE_NAMES_JSON=$6
+INCLUDE_NO_EXTENSION=${7:-true}  # default value "true" means processing the files without extension, such as Dockerfile, vimrc, LICENSE, and Makefile.
 
 vim --version >&2
 
@@ -46,6 +47,7 @@ print_files_in_a_folder() {
     blacklisted_folder_pattern="$BLACKLISTED_FOLDER_PATTERN"
     declare -a whitelisted_file_extensions=($(echo "$WHITELISTED_FILE_EXTENSIONS_JSON" | jq -r '.[]'))
     declare -a whitelisted_file_names=($(echo "$WHITELISTED_FILE_NAMES_JSON" | jq -r '.[]'))
+    include_no_extension="$INCLUDE_NO_EXTENSION"
 
     # Check if the folder is in the blacklist
     folder_basename=$(basename "$folder")
@@ -67,17 +69,29 @@ print_files_in_a_folder() {
         if [ -f "$entry" ]
         then
             base_name=$(basename "$entry")
-            extension="${entry##*.}"
+            filename="${base_name%.*}"
+            extension="${base_name##*.}"
             process_file=false
 
-            # Check if the file's extension is in the whitelist
-            for allowed_extension in "${whitelisted_file_extensions[@]}"
-            do
-                if [ "$extension" == "$allowed_extension" ]; then
-                    process_file=true
-                    break
-                fi
-            done
+            # Debug information for extension checking
+            echo "DEBUG: Processing file: $entry" >&2
+            echo "DEBUG: filename: $filename" >&2
+            echo "DEBUG: extension: $extension" >&2
+            echo "DEBUG: include_no_extension value: $include_no_extension" >&2
+            # Handle files without extension
+            if [ "$filename" == "$extension" ] && [ "$include_no_extension" == "true" ]; then
+                echo "DEBUG: Found file without extension, setting process_file=true" >&2
+                process_file=true
+            else
+                # Check if the file's extension is in the whitelist
+                for allowed_extension in "${whitelisted_file_extensions[@]}"
+                do
+                    if [ "$extension" == "$allowed_extension" ]; then
+                        process_file=true
+                        break
+                    fi
+                done
+            fi
 
             # Check if the file's name is in the whitelist
             for allowed_name in "${whitelisted_file_names[@]}"
