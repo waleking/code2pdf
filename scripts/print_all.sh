@@ -30,25 +30,32 @@ echo "printing all src files in $ROOT_DIR"
 
 # Change src/components/Task.js to src____components____Task----js
 generate_pdf_file_name () {
-    orig_name=$1
+    orig_name="$1"
     output=$( echo "$orig_name" | perl -pe 's/\//____/g and s/\./----/g' )
     echo "$output"
 }
 
 print_to_pdf () {
-    file_name=$1
+    file_name="$1"
     echo "DEBUG: ===================" >&2
     echo "DEBUG: Converting file: $file_name" >&2
     echo "DEBUG: Starting vim conversion..." >&2
-    pdf_name=$( generate_pdf_file_name $file_name)
-    vim -u "$VIMRC_PATH" -c "syntax on" "+set stl+=%{expand('%:~:.')}" "+hardcopy > /tmp/$pdf_name.ps" "+wq" $file_name
+    pdf_name="$( generate_pdf_file_name "$file_name")"
+    # Check if the input is empty or has unexpected characters
+    if [[ -z $pdf_name ]]; then
+        echo "Error: pdf_name is empty."
+        exit 1
+    fi
+    echo "DEBUG: generated pdf_name in /tmp folder: $pdf_name" >&2
+    vim -u "$VIMRC_PATH" -c "syntax on" "+set stl+=%{expand('%:~:.')}" "+hardcopy > /tmp/$pdf_name.ps" "+wq" "$file_name"
     echo "DEBUG: Vim conversion complete" >&2
     echo "DEBUG: Converting PS to PDF..." >&2
-    ps2pdf /tmp/$pdf_name.ps /tmp/$pdf_name.pdf
+    ps2pdf "/tmp/$pdf_name.ps" "/tmp/$pdf_name.pdf"
 }
 
 print_files_in_a_folder() {
-    folder=$1
+    # Quoted assignment, in case $1 has spaces
+    folder="$1"
 
     # Parse the JSON strings into bash arrays
     declare -a blacklisted_folders=($(echo "$BLACKLISTED_FOLDERS_JSON" | jq -r '.[]'))
@@ -57,44 +64,47 @@ print_files_in_a_folder() {
     declare -a whitelisted_file_names=($(echo "$WHITELISTED_FILE_NAMES_JSON" | jq -r '.[]'))
     include_no_extension="$INCLUDE_NO_EXTENSION"
 
-    # Check if the folder is in the blacklist
+    # Check if the folder's basename is in the blacklist array
     folder_basename=$(basename "$folder")
-
-    for blacklist in "${blacklisted_folders[@]}"
-    do
-        if [[ "$folder_basename" == "$blacklist" ]]; then
-            return
-        fi
+    for blacklist in "${blacklisted_folders[@]}"; do
+    if [[ "$folder_basename" == "$blacklist" ]]; then
+        echo "DEBUG: Skipping blacklisted folder: $folder" >&2
+        return
+    fi
     done
 
-    # Handle env* pattern separately
+    # Check if the folder's basename matches the blacklisted pattern (e.g. env*)
     if [[ "$folder_basename" == $blacklisted_folder_pattern ]]; then
+        echo "DEBUG: Skipping folder matching blacklisted pattern: $folder" >&2
         return
     fi
 
     echo "DEBUG: Processing folder: $folder" >&2
-    for entry in "$folder"/*
-    do
-        if [ -f "$entry" ]
-        then
+
+    # The quoted glob handles any folder with spaces
+    for entry in "$folder"/*; do
+        # Skip if it doesn't exist (e.g. empty folder)
+        [ -e "$entry" ] || continue
+
+        if [ -f "$entry" ]; then
+            # File handling
             base_name=$(basename "$entry")
-            filename="${base_name%.*}"
-            extension="${base_name##*.}"
+            filename="${base_name%.*}"      # text before the last dot
+            extension="${base_name##*.}"    # text after the last dot
             process_file=false
 
-            # Debug information for extension checking
             echo "DEBUG: Processing file: $entry" >&2
             echo "DEBUG: filename: $filename" >&2
             echo "DEBUG: extension: $extension" >&2
-            echo "DEBUG: include_no_extension value: $include_no_extension" >&2
+            echo "DEBUG: include_no_extension: $include_no_extension" >&2
+
             # Handle files without extension
             if [ "$filename" == "$extension" ] && [ "$include_no_extension" == "true" ]; then
                 echo "DEBUG: Found file without extension, setting process_file=true" >&2
                 process_file=true
             else
-                # Check if the file's extension is in the whitelist
-                for allowed_extension in "${whitelisted_file_extensions[@]}"
-                do
+                # Check if the extension is in the whitelist
+                for allowed_extension in "${whitelisted_file_extensions[@]}"; do
                     if [ "$extension" == "$allowed_extension" ]; then
                         process_file=true
                         break
@@ -102,26 +112,26 @@ print_files_in_a_folder() {
                 done
             fi
 
-            # Check if the file's name is in the whitelist
-            for allowed_name in "${whitelisted_file_names[@]}"
-            do
+            # Check if the whole filename is in the whitelist
+            for allowed_name in "${whitelisted_file_names[@]}"; do
                 if [ "$base_name" == "$allowed_name" ]; then
                     process_file=true
                     break
                 fi
             done
 
-            if [ "$process_file" = true ]; then
+            # If flagged for processing, convert to PDF
+            if [ "$process_file" == "true" ]; then
                 print_to_pdf "$entry"
-
-                # Emit progress info
                 echo "PROGRESS: Processed $entry" >&2
             fi
+
         else
-            # further visit the files or folders in the current folder
-            # and also avoid symbolic link recursion
+            # Subdirectory handling
             real_path=$(realpath "$entry")
-            if [[ ! " ${visited_dirs[@]} " =~ " ${real_path} " ]]; then
+
+            # Avoid infinite recursion by tracking visited directories
+            if ! printf '%s\n' "${visited_dirs[@]}" | grep -qxF "$real_path"; then
                 visited_dirs+=("$real_path")
                 print_files_in_a_folder "$entry"
             else
@@ -133,7 +143,7 @@ print_files_in_a_folder() {
 
 rm /tmp/*.ps
 rm /tmp/*.pdf
-print_files_in_a_folder $ROOT_DIR 
+print_files_in_a_folder "$ROOT_DIR"
 
 
 ##########################################3
@@ -142,7 +152,7 @@ print_files_in_a_folder $ROOT_DIR
 
 # Change src____components____Task----js.pdf to src/components/Task.js
 generate_orig_file_name () {
-    pdf_name=$1
+    pdf_name="$1"
     output=$( echo "$pdf_name" | perl -pe 's/\.pdf//g and s/____/\//g and s/----/\./g' )
     echo "$output"
 }
@@ -152,9 +162,8 @@ rm table_of_contents
 touch table_of_contents
 
 echo "generating the table of contents"
-for entry in *.pdf
-do
-    orig_file_name=$( generate_orig_file_name $entry )
+for entry in *.pdf; do
+    orig_file_name="$( generate_orig_file_name "$entry" )"
     echo "$orig_file_name" >> table_of_contents
 done
 echo "Info: Contents of table_of_contents:" >&2
